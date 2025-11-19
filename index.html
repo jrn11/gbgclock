@@ -3,180 +3,212 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Multi-Timezone Converter</title>
+  <title>Smart Timezone Converter with DST</title>
   <style>
     body {
+      margin: 0;
+      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f4f4f9;
-      color: #333;
-      margin: 40px;
+      min-height: 100vh;
+      background: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=2940&auto=format&fit=crop') no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
     }
-    h1 { text-align: center; color: #222; }
+    h1 {
+      text-align: center;
+      font-size: 2.5em;
+      margin-bottom: 30px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      z-index: 2;
+    }
     .converter {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 15px;
-      max-width: 1200px;
-      margin: 0 auto;
+      gap: 20px;
+      max-width: 1400px;
+      width: 100%;
+      z-index: 2;
     }
     .zone {
-      background: white;
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 20px 16px;
       text-align: center;
-      transition: all 0.2s;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: all 0.3s ease;
+      opacity: 0.75;
     }
     .zone.active {
-      background: #e3f2fd;
-      box-shadow: 0 4px 16px rgba(33,150,243,0.3);
-      transform: scale(1.05);
+      opacity: 1;
+      transform: translateY(-8px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+      border-color: rgba(100, 200, 255, 0.6);
     }
     label {
       display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
-      font-size: 0.9em;
-      color: #555;
+      font-weight: 600;
+      margin-bottom: 10px;
+      font-size: 1.1em;
     }
+    small { font-weight: normal; opacity: 0.9; }
     input {
       width: 100%;
-      padding: 8px;
-      font-size: 1.1em;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 14px 8px;
+      font-size: 1.4em;
+      font-weight: bold;
       text-align: center;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      box-sizing: border-box;
     }
-    input:focus { outline: none; border-color: #2196f3; }
+    input::placeholder { color: rgba(255,255,255,0.6); }
+    input:focus {
+      outline: none;
+      background: rgba(255,255,255,0.3);
+      box-shadow: 0 0 15px rgba(100,200,255,0.5);
+    }
     .note {
+      margin-top: 40px;
       text-align: center;
-      margin-top: 30px;
-      color: #666;
-      font-size: 0.9em;
+      font-size: 0.95em;
+      opacity: 0.9;
+      text-shadow: 0 1px 5px rgba(0,0,0,0.5);
+      max-width: 800px;
     }
   </style>
 </head>
 <body>
 
-  <h1>Real-Time Zone Converter</h1>
+  <h1>Smart Timezone Converter</h1>
 
-  <div class="converter" id="converter">
-    <!-- Zones will be inserted by JavaScript -->
-  </div>
+  <div class="converter" id="converter"></div>
 
   <p class="note">
-    Click any time field → type a time (e.g., 14:30 or 2:30pm) → all other zones update instantly.<br>
-    Supports 12-hour (with am/pm) and 24-hour formats.
+    Type a time in any zone (e.g., 2:30pm, 14:30, or 11am) — all others update instantly with correct DST.<br>
+    Powered by your browser's built-in timezone database.
   </p>
 
   <script>
     const zones = [
-      { name: "Pacific",     abbr: "PT",  offset: -8 },
-      { name: "Mountain",    abbr: "MT",  offset: -7 },
-      { name: "Central",     abbr: "CT",  offset: -6 },
-      { name: "Eastern",     abbr: "ET",  offset: -5 },
-      { name: "Atlantic",    abbr: "AT",  offset: -4 },
-      { name: "Zulu (UTC)",  abbr: "Z",   offset:  0 }
+      { name: "Pacific",     iana: "America/Los_Angeles" },
+      { name: "Mountain",    iana: "America/Denver" },
+      { name: "Central",     iana: "America/Chicago" },
+      { name: "Eastern",     iana: "America/New_York" },
+      { name: "Atlantic",    iana: "America/Halifax" },
+      { name: "Zulu (UTC)",  iana: "UTC" }
     ];
 
     const container = document.getElementById("converter");
+    const inputs = [];
 
     zones.forEach(zone => {
       const div = document.createElement("div");
       div.className = "zone";
       div.innerHTML = `
-        <label>${zone.name}<br><small>${zone.abbr}</small></label>
-        <input type="text" placeholder="--:--" data-offset="${zone.offset}">
+        <label>${zone.name}<br><small>${zone.iana.split('/').pop().replace('_', ' ')}</small></label>
+        <input type="text" placeholder="--:--" data-iana="${zone.iana}">
       `;
       container.appendChild(div);
+      inputs.push(div.querySelector("input"));
     });
 
-    const inputs = document.querySelectorAll("input");
+    const formatterCache = {};
 
-    // Parse a user-entered time string into minutes since midnight
-    function parseTime(str) {
-      str = str.trim().toLowerCase().replace(/\s+/g, '');
+    function getFormatter(iana) {
+      if (!formatterCache[iana]) {
+        formatterCache[iana] = new Intl.DateTimeFormat('en-US', {
+          timeZone: iana,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+      }
+      return formatterCache[iana];
+    }
+
+    function parseUserTime(inputStr) {
+      inputStr = inputStr.trim().toLowerCase().replace(/\s+/g, '');
       let match;
       let hours, minutes = 0;
 
-      // 24-hour format: 14:30 or 1430
-      if (match = str.match(/^(\d{1,2}):?(\d{2})$/)) {
+      if (match = inputStr.match(/^(\d{1,2}):?(\d{2})$/)) {
         hours = parseInt(match[1], 10);
         minutes = parseInt(match[2], 10);
       }
-      // 12-hour with am/pm
-      else if (match = str.match(/^(\d{1,2}):?(\d{0,2})\s*(am|pm)$/)) {
+      else if (match = inputStr.match(/^(\d{1,2}):?(\d{0,2})(am|pm)$/)) {
         hours = parseInt(match[1], 10);
         minutes = match[2] ? parseInt(match[2], 10) : 0;
-        if (match[3] === "pm" && hours !== 12) hours += 12;
-        if (match[3] === "am" && hours === 12) hours = 0;
+        if (match[3] === 'pm' && hours !== 12) hours += 12;
+        if (match[3] === 'am' && hours === 12) hours = 0;
       } else {
         return null;
       }
 
       if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-      return hours * 60 + minutes;
+      return { hours, minutes };
     }
 
-    // Format minutes → HH:MM (24-hour)
-    function formatTime(minutes) {
-      const h = Math.floor(minutes / 60) % 24;
-      const m = minutes % 60;
-      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-    }
-
-    function updateAll(sourceInput) {
+    function updateFromSource(sourceInput) {
       const raw = sourceInput.value;
-      const minutes = parseTime(raw);
-      if (minutes === null) {
-        // Invalid input → clear everything except the one being edited
+      const parsed = parseUserTime(raw);
+      const sourceIANA = sourceInput.dataset.iana;
+
+      if (!parsed) {
         inputs.forEach(inp => {
-          if (inp !== sourceInput) inp.value = "";
-          inp.parentElement.classList.remove("active");
+          if (inp !== sourceInput) inp.value = '';
         });
-        sourceInput.parentElement.classList.add("active");
+        document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
+        sourceInput.closest('.zone').classList.add('active');
         return;
       }
 
-      // Highlight active zone
-      inputs.forEach(inp => inp.parentElement.classList.remove("active"));
-      sourceInput.parentElement.classList.add("active");
+      // Build a date object in the source timezone
+      const now = new Date();
+      const sourceDate = new Date(now.toLocaleString("en-US", { timeZone: sourceIANA }));
+      sourceDate.setHours(parsed.hours, parsed.minutes, 0, 0);
 
-      // Convert using offsets
+      // Convert to UTC milliseconds once
+      const utcMs = sourceDate.getTime() + (sourceDate.getTimezoneOffset() * 60000);
+
+      // Highlight active
+      document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
+      sourceInput.closest('.zone').classList.add('active');
+
+      // Update all zones
       inputs.forEach(inp => {
         if (inp === sourceInput) return;
-        const offset = parseInt(inp.dataset.offset, 10);
-        const sourceOffset = parseInt(sourceInput.dataset.offset, 10);
-        const diff = offset - sourceOffset;
-        let targetMinutes = minutes + diff * 60;
-
-        // Wrap around the day
-        while (targetMinutes < 0) targetMinutes += 1440;
-        while (targetMinutes >= 1440) targetMinutes -= 1440;
-
-        inp.value = formatTime(targetMinutes);
+        const iana = inp.dataset.iana;
+        const localDate = new Date(utcMs + (new Date().getTimezoneOffset() * 60000));
+        const formatted = getFormatter(iana).format(localDate);
+        inp.value = formatted; // Already HH:MM in 24h
       });
     }
 
     inputs.forEach(input => {
-      input.addEventListener("focus", () => {
-        inputs.forEach(i => i.parentElement.classList.remove("active"));
-        input.parentElement.classList.add("active");
+      input.addEventListener('focus', () => {
+        document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
+        input.closest('.zone').classList.add('active');
       });
 
-      input.addEventListener("input", () => updateAll(input));
+      input.addEventListener('input', () => updateFromSource(input));
     });
 
-    // Optional: show current time in all zones on first load
-    window.addEventListener("load", () => {
+    // Show current real time in all zones on load
+    window.addEventListener('load', () => {
       const now = new Date();
-      const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
       inputs.forEach(inp => {
-        const offset = parseInt(inp.dataset.offset, 10);
-        let localMinutes = utcMinutes + offset * 60;
-        while (localMinutes < 0) localMinutes += 1440;
-        while (localMinutes >= 1440) localMinutes -= 1440;
-        inp.value = formatTime(localMinutes);
+        const iana = inp.dataset.iana;
+        const formatted = getFormatter(iana).format(now);
+        inp.value = formatted;
       });
     });
   </script>
