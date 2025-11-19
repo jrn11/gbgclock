@@ -3,108 +3,95 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Smart Timezone Converter with DST</title>
+  <title>Gettysburg Clock</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      background: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=2940&auto=format&fit=crop') no-repeat center center fixed;
+      background: url('background.jpeg') no-repeat center center fixed;
       background-size: cover;
       color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
+      margin: 40px;
+      min-height: 100vh;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
     h1 {
       text-align: center;
-      font-size: 2.5em;
-      margin-bottom: 30px;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-      z-index: 2;
+      font-size: 2.8em;
+      margin-bottom: 40px;
+      letter-spacing: 1px;
     }
     .converter {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 20px;
-      max-width: 1400px;
-      width: 100%;
-      z-index: 2;
+      gap: 18px;
+      max-width: 1300px;
+      margin: 0 auto;
     }
     .zone {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 16px;
-      padding: 20px 16px;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 18px 14px;
+      border-radius: 12px;
       text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.2);
       transition: all 0.3s ease;
-      opacity: 0.75;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.15);
     }
     .zone.active {
-      opacity: 1;
-      transform: translateY(-8px);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.4);
-      border-color: rgba(100, 200, 255, 0.6);
+      background: rgba(30, 100, 200, 0.7);
+      transform: translateY(-6px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border-color: rgba(100, 180, 255, 0.8);
     }
     label {
       display: block;
-      font-weight: 600;
-      margin-bottom: 10px;
+      font-weight: bold;
       font-size: 1.1em;
+      margin-bottom: 8px;
     }
     small { font-weight: normal; opacity: 0.9; }
     input {
       width: 100%;
-      padding: 14px 8px;
-      font-size: 1.4em;
+      padding: 12px 8px;
+      font-size: 1.5em;
       font-weight: bold;
       text-align: center;
-      background: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.15);
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       color: white;
       box-sizing: border-box;
     }
-    input::placeholder { color: rgba(255,255,255,0.6); }
+    input::placeholder { color: rgba(255,255,255,0.5); }
     input:focus {
       outline: none;
       background: rgba(255,255,255,0.3);
-      box-shadow: 0 0 15px rgba(100,200,255,0.5);
     }
     .note {
-      margin-top: 40px;
       text-align: center;
+      margin-top: 40px;
       font-size: 0.95em;
       opacity: 0.9;
-      text-shadow: 0 1px 5px rgba(0,0,0,0.5);
-      max-width: 800px;
     }
   </style>
 </head>
 <body>
 
-  <h1>Smart Timezone Converter</h1>
+  <h1>Gettysburg Clock</h1>
 
   <div class="converter" id="converter"></div>
 
   <p class="note">
-    Type a time in any zone (e.g., 2:30pm, 14:30, or 11am) — all others update instantly with correct DST.<br>
-    Powered by your browser's built-in timezone database.
+    Type a time in any zone (e.g., 3:15pm, 15:15, or 9am) → others update instantly with correct DST.
   </p>
 
   <script>
     const zones = [
-      { name: "Pacific",     iana: "America/Los_Angeles" },
-      { name: "Mountain",    iana: "America/Denver" },
-      { name: "Central",     iana: "America/Chicago" },
-      { name: "Eastern",     iana: "America/New_York" },
-      { name: "Atlantic",    iana: "America/Halifax" },
-      { name: "Zulu (UTC)",  iana: "UTC" }
+      { name: "Pacific",     abbr: "PT",  iana: "America/Los_Angeles" },
+      { name: "Mountain",    abbr: "MT",  iana: "America/Denver" },
+      { name: "Central",     abbr: "CT",  iana: "America/Chicago" },
+      { name: "Eastern",     abbr: "ET",  iana: "America/New_York" },
+      { name: "Atlantic",    abbr: "AT",  iana: "America/Halifax" },
+      { name: "Zulu (UTC)",  abbr: "Z",   iana: "UTC" }
     ];
 
     const container = document.getElementById("converter");
@@ -114,82 +101,66 @@
       const div = document.createElement("div");
       div.className = "zone";
       div.innerHTML = `
-        <label>${zone.name}<br><small>${zone.iana.split('/').pop().replace('_', ' ')}</small></label>
+        <label>${zone.name}<br><small>${zone.abbr}</small></label>
         <input type="text" placeholder="--:--" data-iana="${zone.iana}">
       `;
       container.appendChild(div);
       inputs.push(div.querySelector("input"));
     });
 
-    const formatterCache = {};
+    const formatters = {};
+    zones.forEach(z => {
+      formatters[z.iana] = new Intl.DateTimeFormat('en-US', {
+        timeZone: z.iana,
+        hour: '2-digit',
+        minute:  '2-digit',
+        hour12: false
+      });
+    });
 
-    function getFormatter(iana) {
-      if (!formatterCache[iana]) {
-        formatterCache[iana] = new Intl.DateTimeFormat('en-US', {
-          timeZone: iana,
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        });
-      }
-      return formatterCache[iana];
-    }
-
-    function parseUserTime(inputStr) {
-      inputStr = inputStr.trim().toLowerCase().replace(/\s+/g, '');
+    function parseTime(str) {
+      str = str.trim().toLowerCase().replace(/\s+/g, '');
       let match;
-      let hours, minutes = 0;
+      let h, m = 0;
 
-      if (match = inputStr.match(/^(\d{1,2}):?(\d{2})$/)) {
-        hours = parseInt(match[1], 10);
-        minutes = parseInt(match[2], 10);
+      if (match = str.match(/^(\d{1,2}):?(\d{2})$/)) {
+        h = parseInt(match[1]); m = parseInt(match[2]);
       }
-      else if (match = inputStr.match(/^(\d{1,2}):?(\d{0,2})(am|pm)$/)) {
-        hours = parseInt(match[1], 10);
-        minutes = match[2] ? parseInt(match[2], 10) : 0;
-        if (match[3] === 'pm' && hours !== 12) hours += 12;
-        if (match[3] === 'am' && hours === 12) hours = 0;
-      } else {
-        return null;
-      }
+      else if (match = str.match(/^(\d{1,2}):?(\d{0,2})(am|pm)$/)) {
+        h = parseInt(match[1]); m = match[2] ? parseInt(match[2]) : 0;
+        if (match[3] === 'pm' && h !== 12) h += 12;
+        if (match[3] === 'am' && h === 12) h = 0;
+      } else return null;
 
-      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-      return { hours, minutes };
+      if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+      return {h, m};
     }
 
-    function updateFromSource(sourceInput) {
-      const raw = sourceInput.value;
-      const parsed = parseUserTime(raw);
+    function updateAll(sourceInput) {
+      const parsed = parseTime(sourceInput.value);
       const sourceIANA = sourceInput.dataset.iana;
 
-      if (!parsed) {
-        inputs.forEach(inp => {
-          if (inp !== sourceInput) inp.value = '';
-        });
-        document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
-        sourceInput.closest('.zone').classList.add('active');
-        return;
-      }
-
-      // Build a date object in the source timezone
-      const now = new Date();
-      const sourceDate = new Date(now.toLocaleString("en-US", { timeZone: sourceIANA }));
-      sourceDate.setHours(parsed.hours, parsed.minutes, 0, 0);
-
-      // Convert to UTC milliseconds once
-      const utcMs = sourceDate.getTime() + (sourceDate.getTimezoneOffset() * 60000);
-
-      // Highlight active
+      // Highlight active zone
       document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
       sourceInput.closest('.zone').classList.add('active');
 
-      // Update all zones
+      if (!parsed) {
+        inputs.forEach(i => i !== sourceInput && (i.value = ''));
+        return;
+      }
+
+      // Create date in source timezone
+      const now = new Date();
+      const sourceDate = new Date(now.toLocaleString("en-US", {timeZone: sourceIANA}));
+      sourceDate.setHours(parsed.h, parsed.m, 0, 0);
+
+      // Convert to UTC once
+      const utcMs = sourceDate.getTime() + sourceDate.getTimezoneOffset() * 60000;
+
       inputs.forEach(inp => {
         if (inp === sourceInput) return;
-        const iana = inp.dataset.iana;
-        const localDate = new Date(utcMs + (new Date().getTimezoneOffset() * 60000));
-        const formatted = getFormatter(iana).format(localDate);
-        inp.value = formatted; // Already HH:MM in 24h
+        const dateInZone = new Date(utcMs - new Date().getTimezoneOffset() * 60000);
+        inp.value = formatters[inp.dataset.iana].format(dateInZone);
       });
     }
 
@@ -198,17 +169,14 @@
         document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
         input.closest('.zone').classList.add('active');
       });
-
-      input.addEventListener('input', () => updateFromSource(input));
+      input.addEventListener('input', () => updateAll(input));
     });
 
-    // Show current real time in all zones on load
+    // Show current real time on load
     window.addEventListener('load', () => {
       const now = new Date();
       inputs.forEach(inp => {
-        const iana = inp.dataset.iana;
-        const formatted = getFormatter(iana).format(now);
-        inp.value = formatted;
+        inp.value = formatters[inp.dataset.iana].format(now);
       });
     });
   </script>
