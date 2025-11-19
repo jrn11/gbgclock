@@ -14,12 +14,7 @@
       min-height: 100vh;
       text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
-    h1 {
-      text-align: center;
-      font-size: 2.8em;
-      margin-bottom: 40px;
-      letter-spacing: 1px;
-    }
+    h1 { text-align: center; font-size: 2.8em; margin-bottom: 40px; letter-spacing: 1px; }
     .converter {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -42,12 +37,7 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       border-color: rgba(100, 180, 255, 0.8);
     }
-    label {
-      display: block;
-      font-weight: bold;
-      font-size: 1.1em;
-      margin-bottom: 8px;
-    }
+    label { display: block; font-weight: bold; font-size: 1.1em; margin-bottom: 8px; }
     small { font-weight: normal; opacity: 0.9; }
     input {
       width: 100%;
@@ -62,16 +52,8 @@
       box-sizing: border-box;
     }
     input::placeholder { color: rgba(255,255,255,0.5); }
-    input:focus {
-      outline: none;
-      background: rgba(255,255,255,0.3);
-    }
-    .note {
-      text-align: center;
-      margin-top: 40px;
-      font-size: 0.95em;
-      opacity: 0.9;
-    }
+    input:focus { outline: none; background: rgba(255,255,255,0.3); }
+    .note { text-align: center; margin-top: 40px; font-size: 0.95em; opacity: 0.9; }
   </style>
 </head>
 <body>
@@ -81,17 +63,17 @@
   <div class="converter" id="converter"></div>
 
   <p class="note">
-    Type a time in any zone (e.g., 3:15pm, 15:15, or 9am) → others update instantly with correct DST.
+    Type a time in any zone (3:15pm, 15:15, 9am, etc.) → others update instantly with correct DST.
   </p>
 
   <script>
     const zones = [
-      { name: "Pacific",     abbr: "PT",  iana: "America/Los_Angeles" },
-      { name: "Mountain",    abbr: "MT",  iana: "America/Denver" },
-      { name: "Central",     abbr: "CT",  iana: "America/Chicago" },
-      { name: "Eastern",     abbr: "ET",  iana: "America/New_York" },
-      { name: "Atlantic",    abbr: "AT",  iana: "America/Halifax" },
-      { name: "Zulu (UTC)",  abbr: "Z",   iana: "UTC" }
+      { name: "Pacific",     abbr: "PT", iana: "America/Los_Angeles" },
+      { name: "Mountain",    abbr: "MT", iana: "America/Denver" },
+      { name: "Central",     abbr: "CT", iana: "America/Chicago" },
+      { name: "Eastern",     abbr: "ET", iana: "America/New_York" },
+      { name: "Atlantic",    abbr: "AT", iana: "America/Halifax" },
+      { name: "Zulu (UTC)",  abbr: "Z",  iana: "UTC" }
     ];
 
     const container = document.getElementById("converter");
@@ -108,25 +90,24 @@
       inputs.push(div.querySelector("input"));
     });
 
+    // One formatter per timezone (cached)
     const formatters = {};
     zones.forEach(z => {
       formatters[z.iana] = new Intl.DateTimeFormat('en-US', {
         timeZone: z.iana,
         hour: '2-digit',
-        minute:  '2-digit',
+        minute: '2-digit',
         hour12: false
       });
     });
 
     function parseTime(str) {
       str = str.trim().toLowerCase().replace(/\s+/g, '');
-      let match;
-      let h, m = 0;
+      let match, h, m = 0;
 
       if (match = str.match(/^(\d{1,2}):?(\d{2})$/)) {
         h = parseInt(match[1]); m = parseInt(match[2]);
-      }
-      else if (match = str.match(/^(\d{1,2}):?(\d{0,2})(am|pm)$/)) {
+      } else if (match = str.match(/^(\d{1,2}):?(\d{0,2})(am|pm)$/)) {
         h = parseInt(match[1]); m = match[2] ? parseInt(match[2]) : 0;
         if (match[3] === 'pm' && h !== 12) h += 12;
         if (match[3] === 'am' && h === 12) h = 0;
@@ -145,25 +126,37 @@
       sourceInput.closest('.zone').classList.add('active');
 
       if (!parsed) {
-        inputs.forEach(i => i !== sourceInput && (i.value = ''));
+        inputs.forEach(i => { if (i !== sourceInput) i.value = ''; });
         return;
       }
 
-      // Create date in source timezone
-      const now = new Date();
-      const sourceDate = new Date(now.toLocaleString("en-US", {timeZone: sourceIANA}));
-      sourceDate.setHours(parsed.h, parsed.m, 0, 0);
+      // 1. Create a proper date object in the SOURCE timezone with the entered time
+      const tempDate = new Date();
+      const sourceParts = formatters[sourceIANA].formatToParts(tempDate);
+      const year = parseInt(sourceParts.find(p => p.type === 'year')?.value || tempDate.getFullYear());
+      const month = parseInt(sourceParts.find(p => p.type === 'month')?.value || tempDate.getMonth() + 1) - 1;
+      const day = parseInt(sourceParts.find(p => p.type === 'day')?.value || tempDate.getDate());
 
-      // Convert to UTC once
-      const utcMs = sourceDate.getTime() + sourceDate.getTimezoneOffset() * 60000;
+      const sourceDateInZone = new Date(year, month, day, parsed.h, parsed.m, 0);
 
+      // 2. Convert that moment to UTC milliseconds (the universal truth)
+      const utcMs = Date.UTC(
+        sourceDateInZone.getUTCFullYear(),
+        sourceDateInZone.getUTCMonth(),
+        sourceDateInZone.getUTCDate(),
+        sourceDateInZone.getUTCHours(),
+        sourceDateInZone.getUTCMinutes()
+      );
+
+      // 3. Render the same moment in every other timezone
       inputs.forEach(inp => {
         if (inp === sourceInput) return;
-        const dateInZone = new Date(utcMs - new Date().getTimezoneOffset() * 60000);
-        inp.value = formatters[inp.dataset.iana].format(dateInZone);
+        const targetDate = new Date(utcMs));
+        inp.value = formatters[inp.dataset.iana].format(targetDate);
       });
     }
 
+    // Event listeners
     inputs.forEach(input => {
       input.addEventListener('focus', () => {
         document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
@@ -172,7 +165,7 @@
       input.addEventListener('input', () => updateAll(input));
     });
 
-    // Show current real time on load
+    // Show current real time on first load
     window.addEventListener('load', () => {
       const now = new Date();
       inputs.forEach(inp => {
