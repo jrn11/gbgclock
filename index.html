@@ -1,171 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gettysburg Clock</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: url('background.jpeg') no-repeat center center fixed;
-      background-size: cover;
-      color: white;
-      margin: 40px;
-      min-height: 100vh;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
-    }
-    h1 { text-align: center; font-size: 2.8em; margin-bottom: 40px; }
-    .converter {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 18px;
-      max-width: 1300px;
-      margin: 0 auto;
-    }
-    .zone {
-      background: rgba(0,0,0,0.45);
-      padding: 18px 14px;
-      border-radius: 12px;
-      text-align: center;
-      transition: all .3s;
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,.15);
-    }
-    .zone.active {
-      background: rgba(30,100,200,0.7);
-      transform: translateY(-6px);
-      box-shadow: 0 10px 30px rgba(0,0,0,.5);
-      border-color: rgba(100,180,255,.8);
-    }
-    label { font-weight: bold; font-size: 1.1em; margin-bottom: 8px; display: block; }
-    small { opacity: 0.9; }
-    input {
-      width: 100%; padding: 12px 8px; font-size: 1.5em; font-weight: bold;
-      text-align: center; background: rgba(255,255,255,.15); border: none;
-      border-radius: 8px; color: white; box-sizing: border-box;
-    }
-    input::placeholder { color: rgba(255,255,255,.5); }
-    input:focus { outline: none; background: rgba(255,255,255,.3); }
-    .note { text-align: center; margin-top: 40px; opacity: 0.9; }
-  </style>
+<meta charset="UTF-8">
+<title>Gettysburg Clock • 1863</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Crimson+Text:wght@400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brass: #b89b5e;
+    --brass-dark: #8b6914;
+    --paper: #f4e8d1;
+    --ink: #2c1e0d;
+    --blood: #8b0000;
+    --smoke: rgba(20,15,10,0.92);
+  }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Crimson Text', serif;
+    background: url('https://images.unsplash.com/photo-1578662996442-48f60103fcbf?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb') center/cover fixed;
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(transparent 0%, var(--smoke) 90%);
+    pointer-events: none;
+  }
+  header {
+    text-align: center;
+    padding: 40px 20px 20px;
+    background: linear-gradient(to bottom, rgba(20,15,10,0.98), rgba(20,15,10,0.9));
+    border-bottom: 6px double var(--brass);
+  }
+  h1 {
+    font-family: 'UnifrakturMaguntia', cursive;
+    font-size: 5em;
+    color: var(--brass);
+    margin: 0;
+    text-shadow: 5px 5px 15px black;
+    letter-spacing: 8px;
+  }
+  .subtitle {
+    font-family: 'Crimson Text', serif;
+    color: #ccc;
+    font-size: 1.3em;
+    letter-spacing: 6px;
+    margin-top: 10px;
+  }
+
+  /* Your exact original grid layout */
+  .converter {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 22px;
+    max-width: 1300px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+
+  .zone {
+    background: var(--paper);
+    padding: 24px 18px;
+    border-radius: 14px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    border: 8px solid var(--brass-dark);
+    border-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="30" height="30" fill="%238b6914"/><rect x="3" y="3" width="24" height="24" fill="none" stroke="%23b89b5e" stroke-width="3"/></svg>') 8;
+    box-shadow: 
+      inset 0 0 60px rgba(139,105,20,0.3),
+      0 15px 40px rgba(0,0,0,0.8);
+  }
+  .zone::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 2px dashed rgba(139,105,20,0.3);
+    pointer-events: none;
+  }
+  .zone:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 40px rgba(184,155,94,0.5);
+  }
+  .zone.active {
+    border-color: var(--blood);
+    box-shadow: 0 30px 70px rgba(0,0,0,0.95), 0 0 60px rgba(139,0,0,0.6);
+    transform: translateY(-12px);
+  }
+  .zone.local {
+    border: 8px double var(--brass);
+    animation: pulse 5s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 40px rgba(184,155,94,0.4); }
+    50% { box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 70px rgba(184,155,94,0.9); }
+  }
+
+  label {
+    font-weight: 600;
+    font-size: 1.4em;
+    display: block;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  small {
+    opacity: 0.85;
+    font-size: 0.95em;
+    color: var(--brass-dark);
+    font-weight: bold;
+  }
+  input {
+    width: 100%;
+    padding: 16px 10px;
+    margin-top: 12px;
+    font-size: 2.2em;
+    font-weight: bold;
+    text-align: center;
+    background: rgba(255,255,255,0.94);
+    border: 4px solid var(--brass-dark);
+    border-radius: 10px;
+    color: var(--ink);
+    font-family: 'Roboto Mono', monospace;
+    box-sizing: border-box;
+    transition: all 0.3s;
+  }
+  input::placeholder {
+    color: rgba(139,105,20,0.6);
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--blood);
+    background: white;
+    box-shadow: 0 0 20px rgba(139,0,0,0.3);
+  }
+
+  .note {
+    text-align: center;
+    margin: 50px 20px 30px;
+    font-style: italic;
+    opacity: 0.8;
+    font-size: 1.1em;
+    color: #ccc;
+  }
+</style>
 </head>
 <body>
+<div class="overlay"></div>
 
-<h1>Gettysburg Clock</h1>
+<header>
+  <h1>Gettysburg</h1>
+  <div class="subtitle">Tactical Time Command • July 1863</div>
+</header>
+
 <div class="converter" id="converter"></div>
-<p class="note">
-  Type any time (0400, 4am, 3:15pm, 16:30…) — works perfectly from every zone including Zulu.
-</p>
+
+<div class="note">
+  “Four score and seven minutes ago…”<br>
+  Type any time — all zones update instantly.
+</div>
 
 <script>
-  const zones = [
-    { name: "Pacific",    abbr: "PT", iana: "America/Los_Angeles" },
-    { name: "Mountain",   abbr: "MT", iana: "America/Denver" },
-    { name: "Central",    abbr: "CT", iana: "America/Chicago" },
-    { name: "Eastern",    abbr: "ET", iana: "America/New_York" },
-    { name: "Atlantic",   abbr: "AT", iana: "America/Halifax" },
-    { name: "Zulu (UTC)", abbr: "Z",  iana: "UTC" }
-  ];
+const zones = [
+  { name: "Pacific", abbr: "PT", iana: "America/Los_Angeles" },
+  { name: "Mountain", abbr: "MT", iana: "America/Denver" },
+  { name: "Central", abbr: "CT", iana: "America/Chicago" },
+  { name: "Eastern", abbr: "ET", iana: "America/New_York" },
+  { name: "Atlantic", abbr: "AT", iana: "America/Halifax" },
+  { name: "Zulu (UTC)", abbr: "Z", iana: "UTC" }
+];
 
-  // Build UI
-  zones.forEach(z => {
-    document.getElementById("converter").innerHTML += `
-      <div class="zone">
-        <label>${z.name}<br><small>${z.abbr}</small></label>
-        <input type="text" placeholder="--:--" data-iana="${z.iana}">
-      </div>`;
+const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const converter = document.getElementById("converter");
+
+// Build UI — exactly your original structure
+zones.forEach(z => {
+  const isLocal = z.iana === userZone;
+  converter.innerHTML += `
+    <div class="zone${isLocal ? ' local' : ''}">
+      <label>${z.name}<br><small>${z.abbr}</small></label>
+      <input type="text" placeholder="--:--" data-iana="${z.iana}">
+    </div>`;
+});
+
+const inputs = document.querySelectorAll("input");
+
+// Accurate formatters
+const displayFmt = {};
+zones.forEach(z => {
+  displayFmt[z.iana] = new Intl.DateTimeFormat('en-US', {
+    timeZone: z.iana,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    hourCycle: 'h23'
   });
+});
 
-  const inputs = document.querySelectorAll("input");
+// Current offsets (DST-safe)
+function getOffset(iana) {
+  const now = new Date();
+  const utc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+                       now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+  const local = new Date(now.toLocaleString("en-US", {timeZone: iana}));
+  return (local - new Date(utc)) / 60000;
+}
+const offsets = {};
+zones.forEach(z => offsets[z.iana] = getOffset(z.iana));
 
-  // Get current offset in minutes for a given IANA zone (handles DST automatically)
-  function getCurrentOffsetMinutes(iana) {
-    const now = new Date();
-    const utc = Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      now.getUTCHours(),
-      now.getUTCMinutes(),
-      now.getUTCSeconds()
-    );
-    const local = new Date(now.toLocaleString("en-US", { timeZone: iana }));
-    return (local - new Date(utc)) / 60000;  // difference in minutes
+// Robust parser (9, 9a, 9am, 0900, 9:30pm, etc.)
+function parseTime(str) {
+  str = str.trim().toLowerCase().replace(/[^0-9amp:]/g, '');
+  if (!str) return null;
+  let h, m = 0;
+  const num = str.replace(/[^0-9]/g, '');
+  const hasPM = /p/.test(str);
+  const hasAM = /a/.test(str) && !hasPM;
+
+  if (num.length <= 2) h = +num || 0;
+  else if (num.length === 3) { h = +num[0]; m = +(num[1]+num[2]); }
+  else if (num.length === 4) { h = +(num[0]+num[1]); m = +(num[2]+num[3]); }
+  else if (str.includes(':')) {
+    const [hh, mm] = str.split(':');
+    h = +(hh.replace(/\D/g,'')||0);
+    m = +(mm.replace(/\D/g,'')||0);
   }
+  if (hasPM && h < 12) h += 12;
+  if (hasAM && h === 12) h = 0;
+  return (h > 23 || m > 59) ? null : h * 60 + m;
+}
 
-  // Pre-calculate offsets once
-  const offsets = {};
-  zones.forEach(z => offsets[z.iana] = getCurrentOffsetMinutes(z.iana));
+function updateAll(sourceInput) {
+  const srcIana = sourceInput.dataset.iana;
+  const minutes = parseTime(sourceInput.value);
 
-  // Display formatters (cached)
-  const displayFmt = {};
-  zones.forEach(z => {
-    displayFmt[z.iana] = new Intl.DateTimeFormat('en-US', {
-      timeZone: z.iana,
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      hourCycle: 'h23'
-    });
-  });
-
-  function parseTime(str) {
-    str = str.trim().toLowerCase().replace(/\s+/g, '');
-    let h, m = 0;
-    const m24 = str.match(/^(\d{1,2}):?(\d{2})$/);
-    const m12 = str.match(/^(\d{1,2}):?(\d{0,2})(am|pm)$/);
-    if (m24) { h = +m24[1]; m = +m24[2]; }
-    else if (m12) {
-      h = +m12[1]; m = m12[2] ? +m12[2] : 0;
-      if (m12[3] === 'pm' && h !== 12) h += 12;
-      if (m12[3] === 'am' && h === 12) h = 0;
-    } else return null;
-    if (h > 23 || m > 59) return null;
-    return h * 60 + m; // minutes since midnight
-  }
-
-  function updateAll(sourceInput) {
-    const srcIana = sourceInput.dataset.iana;
-    const minutes = parseTime(sourceInput.value);
-
-    // Highlight
-    document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
+  document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
+  if (minutes !== null) {
     sourceInput.closest('.zone').classList.add('active');
-
-    if (minutes === null) {
-      inputs.forEach(i => { if (i !== sourceInput) i.value = ''; });
-      return;
-    }
-
-    // Convert source local minutes → UTC minutes
-    const utcMinutes = (minutes - offsets[srcIana] + 1440) % 1440;
-
-    // Convert UTC minutes → every other zone
-    inputs.forEach(inp => {
-      if (inp === sourceInput) return;
-      const targetMinutes = (utcMinutes + offsets[inp.dataset.iana] + 1440) % 1440;
-      const h = Math.floor(targetMinutes / 60) % 24;
-      const m = targetMinutes % 60;
-      inp.value = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
-    });
   }
 
-  // Events
-  inputs.forEach(inp => {
-    inp.addEventListener('focus', () => {
-      document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
-      inp.closest('.zone').classList.add('active');
-    });
-    inp.addEventListener('input', () => updateAll(inp));
-  });
+  if (minutes === null) {
+    inputs.forEach(i => { if (i !== sourceInput) i.value = ''; });
+    return;
+  }
 
-  // Show real current time on load
-  window.addEventListener('load', () => {
-    const now = new Date();
-    inputs.forEach(inp => {
-      inp.value = displayFmt[inp.dataset.iana].format(now);
-    });
+  const utcMinutes = (minutes - offsets[srcIana] + 1440) % 1440;
+
+  inputs.forEach(inp => {
+    if (inp === sourceInput) return;
+    const targetMinutes = (utcMinutes + offsets[inp.dataset.iana] + 1440) % 1440;
+    const h = String(Math.floor(targetMinutes / 60) % 24).padStart(2, '0');
+    const m = String(targetMinutes % 60).padStart(2, '0');
+    inp.value = `${h}:${m}`;
   });
+}
+
+// Events
+inputs.forEach(inp => {
+  inp.addEventListener('focus', () => {
+    document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
+    inp.closest('.zone').classList.add('active');
+  });
+  inp.addEventListener('input', () => updateAll(inp));
+});
+
+// Show current time on load
+window.addEventListener('load', () => {
+  const now = new Date();
+  inputs.forEach(inp => {
+    inp.value = displayFmt[inp.dataset.iana].format(now);
+  });
+});
 </script>
 </body>
 </html>
