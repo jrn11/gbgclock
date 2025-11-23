@@ -12,49 +12,61 @@
     --paper: #f4e8d1;
     --ink: #2c1e0d;
     --blood: #8b0000;
-    --smoke: rgba(20,15,10,0.92);
   }
   body {
     margin: 0;
     min-height: 100vh;
     font-family: 'Crimson Text', serif;
-    background: url('https://images.unsplash.com/photo-1578662996442-48f60103fcbf?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb') center/cover fixed;
+    background: url('background.png') no-repeat center center fixed;
+    background-size: cover;
     color: var(--ink);
-    overflow-x: hidden;
+    position: relative;
   }
-  .overlay {
+
+  /* Beautiful dark gradient overlay that points to your background.jpeg */
+  body::before {
+    content: "";
     position: fixed;
     inset: 0;
-    background: linear-gradient(transparent 0%, var(--smoke) 90%);
+    background: linear-gradient(
+      to bottom,
+      rgba(20,15,10,0.65) 0%,
+      rgba(20,15,10,0.82) 60%,
+      rgba(10,8,8,0.95) 100%
+    );
     pointer-events: none;
+    z-index: 1;
   }
+
+  header, .converter, .note {
+    position: relative;
+    z-index: 2;
+  }
+
   header {
     text-align: center;
-    padding: 40px 20px 20px;
-    background: linear-gradient(to bottom, rgba(20,15,10,0.98), rgba(20,15,10,0.9));
+    padding: 50px 20px 30px;
     border-bottom: 6px double var(--brass);
   }
   h1 {
     font-family: 'UnifrakturMaguntia', cursive;
-    font-size: 5em;
+    font-size: 5.2em;
     color: var(--brass);
     margin: 0;
     text-shadow: 5px 5px 15px black;
     letter-spacing: 8px;
   }
   .subtitle {
-    font-family: 'Crimson Text', serif;
-    color: #ccc;
+    color: #ddd;
     font-size: 1.3em;
-    letter-spacing: 6px;
+    letter-spacing: 6:px;
     margin-top: 10px;
   }
 
-  /* Your exact original grid layout */
   .converter {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 22px;
+    gap: 24px;
     max-width: 1300px;
     margin: 40px auto;
     padding: 0 20px;
@@ -62,32 +74,23 @@
 
   .zone {
     background: var(--paper);
-    padding: 24px 18px;
+    padding: 26px 18px;
     border-radius: 14px;
     text-align: center;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
     border: 8px solid var(--brass-dark);
     border-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="30" height="30" fill="%238b6914"/><rect x="3" y="3" width="24" height="24" fill="none" stroke="%23b89b5e" stroke-width="3"/></svg>') 8;
-    box-shadow: 
-      inset 0 0 60px rgba(139,105,20,0.3),
-      0 15px 40px rgba(0,0,0,0.8);
+    box-shadow: inset 0 0 60px rgba(139,105,20,0.3), 0 15px 40px rgba(0,0,0,0.8);
   }
   .zone::before {
-    content: "";
-    position: absolute;
-    inset: 8px;
+    content: ""; position: absolute; inset: 8px;
     border: 2px dashed rgba(139,105,20,0.3);
     pointer-events: none;
   }
-  .zone:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 40px rgba(184,155,94,0.5);
-  }
+  .zone:hover { transform: translateY(-10px); }
   .zone.active {
     border-color: var(--blood);
-    box-shadow: 0 30px 70px rgba(0,0,0,0.95), 0 0 60px rgba(139,0,0,0.6);
+    box-shadow: 0 30px 70px rgba(0,0,0,0.95), 0 0 60px rgba(139,0,0,0.5);
     transform: translateY(-12px);
   }
   .zone.local {
@@ -96,7 +99,7 @@
   }
   @keyframes pulse {
     0%,100% { box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 40px rgba(184,155,94,0.4); }
-    50% { box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 70px rgba(184,155,94,0.9); }
+    50%     { box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 70px rgba(184,155,94,0.9); }
   }
 
   label {
@@ -125,11 +128,8 @@
     color: var(--ink);
     font-family: 'Roboto Mono', monospace;
     box-sizing: border-box;
-    transition: all 0.3s;
   }
-  input::placeholder {
-    color: rgba(139,105,20,0.6);
-  }
+  input::placeholder { color: rgba(139,105,20,0.6); }
   input:focus {
     outline: none;
     border-color: var(--blood);
@@ -139,16 +139,15 @@
 
   .note {
     text-align: center;
-    margin: 50px 20px 30px;
+    margin: 60px 20px 40px;
     font-style: italic;
-    opacity: 0.8;
-    font-size: 1.1em;
+    font-size: 1.15em;
     color: #ccc;
+    opacity: 0.9;
   }
 </style>
 </head>
 <body>
-<div class="overlay"></div>
 
 <header>
   <h1>Gettysburg</h1>
@@ -175,7 +174,7 @@ const zones = [
 const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const converter = document.getElementById("converter");
 
-// Build UI — exactly your original structure
+// Build cards
 zones.forEach(z => {
   const isLocal = z.iana === userZone;
   converter.innerHTML += `
@@ -187,19 +186,15 @@ zones.forEach(z => {
 
 const inputs = document.querySelectorAll("input");
 
-// Accurate formatters
 const displayFmt = {};
 zones.forEach(z => {
   displayFmt[z.iana] = new Intl.DateTimeFormat('en-US', {
     timeZone: z.iana,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    hourCycle: 'h23'
+    hour: '2-digit', minute: '2-digit',
+    hour12: false, hourCycle: 'h23'
   });
 });
 
-// Current offsets (DST-safe)
 function getOffset(iana) {
   const now = new Date();
   const utc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
@@ -210,7 +205,6 @@ function getOffset(iana) {
 const offsets = {};
 zones.forEach(z => offsets[z.iana] = getOffset(z.iana));
 
-// Robust parser (9, 9a, 9am, 0900, 9:30pm, etc.)
 function parseTime(str) {
   str = str.trim().toLowerCase().replace(/[^0-9amp:]/g, '');
   if (!str) return null;
@@ -237,9 +231,7 @@ function updateAll(sourceInput) {
   const minutes = parseTime(sourceInput.value);
 
   document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
-  if (minutes !== null) {
-    sourceInput.closest('.zone').classList.add('active');
-  }
+  if (minutes !== null) sourceInput.closest('.zone').classList.add('active');
 
   if (minutes === null) {
     inputs.forEach(i => { if (i !== sourceInput) i.value = ''; });
@@ -250,14 +242,13 @@ function updateAll(sourceInput) {
 
   inputs.forEach(inp => {
     if (inp === sourceInput) return;
-    const targetMinutes = (utcMinutes + offsets[inp.dataset.iana] + 1440) % 1440;
-    const h = String(Math.floor(targetMinutes / 60) % 24).padStart(2, '0');
-    const m = String(targetMinutes % 60).padStart(2, '0');
+    const target = (utcMinutes + offsets[inp.dataset.iana] + 1440) % 1440;
+    const h = String(Math.floor(target / 60) % 24).padStart(2, '0');
+    const m = String(target % 60).padStart(2, '0');
     inp.value = `${h}:${m}`;
   });
 }
 
-// Events
 inputs.forEach(inp => {
   inp.addEventListener('focus', () => {
     document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
@@ -266,7 +257,6 @@ inputs.forEach(inp => {
   inp.addEventListener('input', () => updateAll(inp));
 });
 
-// Show current time on load
 window.addEventListener('load', () => {
   const now = new Date();
   inputs.forEach(inp => {
